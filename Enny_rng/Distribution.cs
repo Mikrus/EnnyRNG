@@ -15,9 +15,7 @@ namespace EnnyRNG
     public class Distribution
     {
 
-        private List<PartFunction> Fx;
-        private double deriv0;
-        private double min;
+        private List<PartFunction> fx;
         private Random rnd;
 
         /// <summary>
@@ -30,26 +28,27 @@ namespace EnnyRNG
         /// <exception cref="Enny_rng.Exceptions.InvalidPrababilityException">A megadott intervallumok kitoltik a rendelkezesre allo helyet, de az ossz valoszinuseguk nem 1</exception>
         public Distribution(double min, double max, List<Interval> intervals)
         {
+            //Rendezés, diszjunktság vizsgálat majd megnézzük, hogy az átadott fv belefér-e az átadott [min;max[-ba
             intervals.Sort();
             for (int i = 0; i < intervals.Count - 1; i++)
             {
-                if(intervals[i].getU_bound() > intervals[i + 1].getL_bound())
+                if(intervals[i].U_bound > intervals[i + 1].L_bound)
                     throw new NotDisjointException("A megadott intervallumok osszeernek");
             }
-            if(intervals[0].getL_bound() < min || intervals[intervals.Count-1].getU_bound() > min)
+            if(intervals[0].L_bound < min || intervals[intervals.Count-1].U_bound > min)
                 throw new IndexOutOfRangeException("A megadott min-max szűkebb, mint az intervallumok lista össz intervallumai.");
 
 
-            Fx = new List<PartFunction>();
-
+            fx = new List<PartFunction>();
+            //kiszámoljuk, hogy mennyi helyen nem definiált a fv és erre mekkora valószínűség maradt
             double remInterval = max - min;
             double remProp = 1;
-            for (int i = 0; i < intervals.Count; i++)
+            foreach (Interval i in intervals)
             {
-                remInterval -= intervals[i].length();
-                remProp -= intervals[i].getProb();
+                remInterval -= i.Length;
+                remProp -= i.Prob;
             }
-
+            //meghoatározzuk, hogy mekkora legyen a meredeksége a fv-nek a nem definiált helyeken
             double deriv0;
             if (remProp < 0.001)
             {
@@ -65,7 +64,7 @@ namespace EnnyRNG
                     throw new InvalidPrababilityException("A megadott intervallumok kitoltik a rendelkezesre allo helyet, de az ossz valoszinuseguk nem 1");
                 deriv0 = 1;
             }
-
+            //megkonstruáljuk az eloszlásfüggvényt
             double yLower = 0;
             double yUpper = 0;
             double b = 0;
@@ -76,24 +75,22 @@ namespace EnnyRNG
                 if (deriv0 != 0)
                 {
                     yLower = yUpper;
-                    yUpper = yLower + deriv0 * (intervals[i].getL_bound() - X_prev);
+                    yUpper = yLower + deriv0 * (intervals[i].L_bound - X_prev);
                     deriv = 1 / deriv0;
                     b = min + X_prev - deriv * yLower;
-                    Fx.Add(new LinearFunc(yLower, yUpper, deriv, b));
+                    fx.Add(new LinearFunc(yLower, yUpper, deriv, b));
                 }
 
                 yLower = yUpper;
-                yUpper = yLower + intervals[i].getProb();
-                deriv = intervals[i].length() / intervals[i].getProb();
-                b = min + intervals[i].getL_bound() - deriv * yLower;
-                Fx.Add(new LinearFunc(yLower, yUpper, deriv, b));
-                X_prev = intervals[i].getU_bound();
+                yUpper = yLower + intervals[i].Prob;
+                deriv = intervals[i].Length / intervals[i].Prob;
+                b = min + intervals[i].L_bound - deriv * yLower;
+                fx.Add(new LinearFunc(yLower, yUpper, deriv, b));
+                X_prev = intervals[i].U_bound;
             }
 
             if (yUpper != 1)
-                Fx.Add(new LinearFunc(yUpper, 1, 1 / deriv0, max - 1 / deriv0 * 1));
-            this.deriv0 = 1 / deriv0;
-            this.min = min;
+                fx.Add(new LinearFunc(yUpper, 1, 1 / deriv0, max - 1 / deriv0 * 1));
             rnd = new Random();
         }
 
@@ -105,10 +102,10 @@ namespace EnnyRNG
         {
             double rn = rnd.NextDouble();
 
-            for (int i = 0; i < Fx.Count; i++)
+            foreach (PartFunction pf in fx)
             {
-                if (rn >= Fx[i].GetL_bound() && rn < Fx[i].GetU_bound())
-                    return Fx[i].ValueAt(rn);
+                if (rn >= pf.L_bound && rn < pf.U_bound)
+                    return pf.ValueAt(rn);
             }
 
             return -1;
