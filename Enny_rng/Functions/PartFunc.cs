@@ -11,36 +11,15 @@ namespace EnnyRNG.Functions
         /// </summary>
         public abstract class PartFunction
         {
-            private double L_bound;
-            private double U_bound;
-
-            public double GetL_bound()
-            {
-                return L_bound;
-            }
-
-            public void SetL_bound(double l_bound)
-            {
-                L_bound = l_bound;
-            }
-
-            public double GetU_bound()
-            {
-                return U_bound;
-            }
-
-            public void SetU_bound(double u_bound)
-            {
-                U_bound = u_bound;
-            }
-
+            public double L_bound { get; set; }
+            public double U_bound { get; set; }
             /// <summary>
             /// Visszaadja az intervallum hosszát.
             /// </summary>
             /// <returns>Az intervallum hossza.</returns>
-            public double Length()
+            public double Length
             {
-                return U_bound - L_bound;
+                get { return U_bound - L_bound; }
             }
 
             public abstract double ValueAt(double x);
