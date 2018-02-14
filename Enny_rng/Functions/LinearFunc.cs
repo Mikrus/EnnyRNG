@@ -17,8 +17,8 @@ namespace EnnyRNG.Functions
         /// <seealso cref="EnnyRNG.Functions.PartFunction" />
         public class LinearFunc : PartFunction
         {
-            private double deriv;
-            private double b;
+            public double Deriv { get; }
+            public double B { get; }
 
 
             /// <summary>
@@ -33,20 +33,10 @@ namespace EnnyRNG.Functions
             {
                 if (U_bound < L_bound)
                     throw new LowerboundMoreThanUpperboundException("Az also hatar nagyobb a felsonel");
-                SetL_bound(L_bound);
-                SetU_bound(U_bound);
-                this.deriv = deriv;
-                this.b = b;
-            }
-
-            public double GetDeriv()
-            {
-                return deriv;
-            }
-
-            public double GetB()
-            {
-                return b;
+                this.L_bound = L_bound;
+                this.U_bound = U_bound;
+                this.Deriv = deriv;
+                this.B = b;
             }
 
             /// <summary>
@@ -56,7 +46,7 @@ namespace EnnyRNG.Functions
             /// <returns>A függvény értéke az x helyen.</returns>
             public override double ValueAt(double x)
             {
-                return deriv * x + b;
+                return Deriv * x + B;
             }
         }
     }
